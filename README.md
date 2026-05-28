@@ -5,7 +5,6 @@ Bot automatisé pour récupérer les jeux gratuits Epic Games chaque semaine ave
 ## Aperçu du Dashboard
 
 ![Configuration](assets/dashboard1.png)
-![Terminal](assets/dashboard2.png)
 
 ## Déploiement rapide (Docker)
 

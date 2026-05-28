@@ -1,0 +1,7 @@
+node_modules/
+browser_data/
+screenshots/
+config.json
+epic-games.json
+.env
+*.zip

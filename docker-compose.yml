@@ -1,0 +1,16 @@
+services:
+  epic-claimer:
+    image: ghcr.io/hoesaek/epicgames-claimer:latest
+    container_name: epic-claimer
+    restart: unless-stopped
+    security_opt:
+      - seccomp:unconfined
+    ports:
+      - 8080:8080
+    volumes:
+      - ./config.json:/app/config.json
+      - ./epic-games.json:/app/epic-games.json
+      - ./browser_data:/app/browser_data
+      - ./screenshots:/app/screenshots
+    environment:
+      - TZ=Europe/Paris

@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="fr" class="h-full bg-black">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Epic Claimer Dashboard</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔥</text></svg>">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: {
+                        panel: '#0a0a0a',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #52525b; }
+        
+        .game-card-hover { transition: all 0.2s; }
+        .game-card-hover:hover { background-color: rgba(255, 255, 255, 0.03); }
+        
+        /* Subtle red/orange glow effect for the primary button */
+        .btn-glow {
+            box-shadow: 0 0 15px rgba(239, 68, 68, 0.4);
+            transition: all 0.3s ease;
+        }
+        .btn-glow:hover {
+            box-shadow: 0 0 25px rgba(249, 115, 22, 0.6);
+            transform: translateY(-1px);
+        }
+    </style>
+</head>
+<body class="h-full text-zinc-300 antialiased overflow-hidden flex bg-black">
+
+    <!-- Sidebar: Games List -->
+    <aside class="hidden lg:flex w-80 flex-col bg-black border-r border-white/5 h-full shrink-0">
+        <div class="flex h-16 shrink-0 items-center gap-x-3 px-6 border-b border-white/5">
+            <div class="h-8 w-8 rounded-lg bg-gradient-to-br from-red-600 to-orange-500 flex items-center justify-center shadow-lg shadow-red-500/20">
+                <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+            </div>
+            <span class="text-white font-bold tracking-tight text-lg bg-clip-text text-transparent bg-gradient-to-r from-red-500 to-orange-400">Epic Claimer</span>
+        </div>
+        
+        <div class="flex flex-1 flex-col overflow-y-auto px-4 py-4">
+            <h3 class="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-3">Jeux Récupérés</h3>
+            <div id="games-container" class="space-y-1.5 flex-1">
+                <!-- Skeletons -->
+                <div class="animate-pulse flex gap-3 p-2">
+                    <div class="w-12 h-16 bg-white/5 rounded"></div>
+                    <div class="flex-1 space-y-2 py-1"><div class="h-3 bg-white/5 rounded w-3/4"></div><div class="h-2 bg-white/5 rounded w-1/2"></div></div>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 flex flex-col h-full overflow-y-auto bg-black">
+        
+        <!-- Top Header -->
+        <header class="flex h-16 shrink-0 items-center justify-between gap-x-4 border-b border-white/5 px-4 sm:gap-x-6 sm:px-6 lg:px-8 bg-black/50 backdrop-blur sticky top-0 z-10">
+            <h1 class="text-xl font-semibold text-white">Dashboard</h1>
+            
+            <div class="flex items-center gap-4">
+                <div class="flex items-center gap-2 px-3 py-1.5 rounded-md bg-panel ring-1 ring-white/5">
+                    <span id="status-dot" class="h-2 w-2 rounded-full bg-zinc-500"></span>
+                    <span id="bot-status" class="text-sm font-medium text-zinc-300">Chargement...</span>
+                </div>
+                <button id="claim-btn" type="button" class="btn-glow rounded-md bg-gradient-to-r from-red-600 to-orange-500 px-4 py-2 text-sm font-semibold text-white transition-colors">
+                    Lancer la vérification
+                </button>
+            </div>
+        </header>
+
+        <div class="flex-1 p-4 sm:p-6 lg:p-8">
+            <div class="grid grid-cols-1 xl:grid-cols-2 gap-8 max-w-7xl mx-auto">
+                
+                <!-- Left: Terminal / Monitor -->
+                <div class="flex flex-col h-[600px]">
+                    <h2 class="text-base font-semibold leading-7 text-white mb-4">Activité du Bot</h2>
+                    <div class="bg-panel ring-1 ring-white/5 rounded-xl flex-1 flex flex-col overflow-hidden shadow-2xl">
+                        <!-- Tabs -->
+                        <div class="border-b border-white/5 bg-panel flex">
+                            <button id="tab-logs" class="px-4 py-3 text-sm font-medium text-orange-500 border-b-2 border-orange-500">Logs Terminal</button>
+                            <button id="tab-monitor" class="px-4 py-3 text-sm font-medium text-zinc-400 hover:text-zinc-200 border-b-2 border-transparent">Live Monitor</button>
+                        </div>
+                        
+                        <!-- Content -->
+                        <div class="relative flex-1 bg-black">
+                            <div id="logs-container" class="absolute inset-0 p-4 overflow-y-auto font-mono text-xs leading-relaxed text-zinc-300 space-y-1"></div>
+                            
+                            <div id="monitor-container" class="hidden absolute inset-0 flex flex-col items-center justify-center p-4">
+                                <img id="live-screenshot" src="" alt="Monitor" class="max-w-full max-h-full object-contain rounded ring-1 ring-white/5 opacity-50">
+                                <p id="monitor-status" class="absolute text-sm text-zinc-500 animate-pulse">En attente d'image...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right: Configuration Forms -->
+                <div class="flex flex-col">
+                    <h2 class="text-base font-semibold leading-7 text-white mb-4">Paramètres</h2>
+                    <div class="space-y-6">
+                        
+                        <!-- Main Settings -->
+                        <div class="bg-panel ring-1 ring-white/5 rounded-xl shadow-2xl">
+                            <form id="settings-form" class="p-6 space-y-4">
+                                <div>
+                                    <label class="block text-sm font-medium leading-6 text-zinc-300">Email Epic Games</label>
+                                    <div class="mt-2">
+                                        <input type="email" id="eg_email" class="block w-full rounded-md border-0 bg-white/5 py-2 text-white shadow-sm ring-1 ring-inset ring-white/10 focus:ring-2 focus:ring-inset focus:ring-orange-500 sm:text-sm px-3 transition-shadow">
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium leading-6 text-zinc-300">Mot de passe Epic Games</label>
+                                    <div class="mt-2">
+                                        <input type="password" id="eg_password" class="block w-full rounded-md border-0 bg-white/5 py-2 text-white shadow-sm ring-1 ring-inset ring-white/10 focus:ring-2 focus:ring-inset focus:ring-orange-500 sm:text-sm px-3 transition-shadow">
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-medium leading-6 text-zinc-400">Clé 2FA (Optionnel)</label>
+                                        <input type="text" id="eg_otpkey" class="mt-2 block w-full rounded-md border-0 bg-white/5 py-2 text-white shadow-sm ring-1 ring-inset ring-white/10 focus:ring-2 focus:ring-inset focus:ring-orange-500 sm:text-sm px-3 transition-shadow">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium leading-6 text-zinc-400">PIN Parental</label>
+                                        <input type="text" id="eg_parentalpin" class="mt-2 block w-full rounded-md border-0 bg-white/5 py-2 text-white shadow-sm ring-1 ring-inset ring-white/10 focus:ring-2 focus:ring-inset focus:ring-orange-500 sm:text-sm px-3 transition-shadow">
+                                    </div>
+                                </div>
+                                
+                                <hr class="border-white/5 my-5">
+                                
+                                <div>
+                                    <label class="block text-sm font-medium leading-6 text-zinc-300">Discord Webhook</label>
+                                    <input type="text" id="webhookUrl" placeholder="https://discord.com/api/webhooks/..." class="mt-2 block w-full rounded-md border-0 bg-white/5 py-2 text-white shadow-sm ring-1 ring-inset ring-white/10 focus:ring-2 focus:ring-inset focus:ring-orange-500 sm:text-sm px-3 transition-shadow">
+                                </div>
+
+                                <div class="pt-4 flex items-center justify-end gap-x-4">
+                                    <span id="settings-msg" class="text-sm text-orange-400 opacity-0 transition-opacity">Sauvegardé !</span>
+                                    <button type="submit" class="rounded-md bg-white/5 px-4 py-2 text-sm font-semibold text-white shadow-sm ring-1 ring-inset ring-white/10 hover:bg-white/10 transition-colors">Sauvegarder</button>
+                                </div>
+                            </form>
+                        </div>
+
+                        <!-- Advanced Settings -->
+                        <div class="bg-panel ring-1 ring-white/5 rounded-xl shadow-2xl overflow-hidden">
+                            <details class="group">
+                                <summary class="p-6 text-sm font-semibold leading-6 text-white cursor-pointer flex justify-between items-center bg-panel hover:bg-white/[0.02] transition-colors list-none">
+                                    Options Avancées (API & Sécurité)
+                                    <svg class="h-5 w-5 text-zinc-500 group-open:rotate-180 transition-transform" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd" /></svg>
+                                </summary>
+                                <form id="advanced-settings-form" class="p-6 pt-0 border-t border-white/5 space-y-4 mt-4">
+                                    <div>
+                                        <label class="block text-sm font-medium leading-6 text-zinc-400">Mot de passe Dashboard</label>
+                                        <input type="password" id="dashboard_password" class="mt-2 block w-full rounded-md border-0 bg-white/5 py-2 text-white shadow-sm ring-1 ring-inset ring-white/10 focus:ring-2 focus:ring-inset focus:ring-orange-500 sm:text-sm px-3">
+                                    </div>
+                                    <div class="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label class="block text-sm font-medium leading-6 text-zinc-400">Telegram Token</label>
+                                            <input type="text" id="telegram_token" class="mt-2 block w-full rounded-md border-0 bg-white/5 py-2 text-white shadow-sm ring-1 ring-inset ring-white/10 focus:ring-2 focus:ring-inset focus:ring-orange-500 sm:text-sm px-3">
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-medium leading-6 text-zinc-400">RAWG.io API Key</label>
+                                            <input type="text" id="rawg_api_key" class="mt-2 block w-full rounded-md border-0 bg-white/5 py-2 text-white shadow-sm ring-1 ring-inset ring-white/10 focus:ring-2 focus:ring-inset focus:ring-orange-500 sm:text-sm px-3">
+                                        </div>
+                                    </div>
+                                    <div class="pt-4 flex items-center justify-end gap-x-4">
+                                        <span id="advanced-msg" class="text-sm text-orange-400 opacity-0 transition-opacity">Sauvegardé !</span>
+                                        <button type="submit" class="rounded-md bg-white/5 px-4 py-2 text-sm font-semibold text-white shadow-sm ring-1 ring-inset ring-white/10 hover:bg-white/10 transition-colors">Mettre à jour</button>
+                                    </div>
+                                </form>
+                            </details>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Mobile Games Gallery -->
+    <div class="lg:hidden p-4 border-t border-white/5 bg-black">
+        <h3 class="text-sm font-semibold text-white mb-4">Jeux Récupérés</h3>
+        <div id="games-container-mobile" class="flex overflow-x-auto gap-4 pb-4 snap-x"></div>
+    </div>
+
+    <div id="toast-container" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2"></div>
+
+    <script>
+        const showToast = (message, isError = false) => {
+            const toast = document.createElement('div');
+            toast.className = `transform transition-all duration-300 translate-y-4 opacity-0 flex items-center gap-x-2 rounded-md px-4 py-3 text-sm font-medium shadow-2xl ring-1 ${isError ? 'bg-[#2a0808] text-red-200 ring-red-900' : 'bg-panel text-white ring-white/10'}`;
+            toast.innerHTML = isError 
+                ? `<svg class="h-5 w-5 text-red-500" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z" clip-rule="evenodd"/></svg> ${message}`
+                : `<svg class="h-5 w-5 text-green-500" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clip-rule="evenodd"/></svg> ${message}`;
+            
+            document.getElementById('toast-container').appendChild(toast);
+            requestAnimationFrame(() => toast.classList.remove('translate-y-4', 'opacity-0'));
+            setTimeout(() => { toast.classList.add('opacity-0'); setTimeout(() => toast.remove(), 300); }, 3000);
+        };
+
+        const updateStatus = async () => {
+            try {
+                const res = await fetch('/api/status');
+                const data = await res.json();
+                const statusEl = document.getElementById('bot-status');
+                const dot = document.getElementById('status-dot');
+                
+                statusEl.innerText = data.status;
+                if (data.status === "En cours d'exécution") {
+                    dot.className = "h-2 w-2 rounded-full bg-orange-500 animate-pulse shadow-[0_0_8px_rgba(249,115,22,0.8)]";
+                    statusEl.className = "text-sm font-medium text-orange-400";
+                } else if (data.status === "Erreur") {
+                    dot.className = "h-2 w-2 rounded-full bg-red-600";
+                    statusEl.className = "text-sm font-medium text-red-400";
+                } else {
+                    dot.className = "h-2 w-2 rounded-full bg-zinc-600";
+                    statusEl.className = "text-sm font-medium text-zinc-400";
+                }
+            } catch (err) {}
+        };
+
+        const updateLogs = async () => {
+            try {
+                const res = await fetch('/api/logs');
+                const data = await res.json();
+                const container = document.getElementById('logs-container');
+                container.innerHTML = '';
+                data.logs.forEach(log => {
+                    const div = document.createElement('div');
+                    if (log.includes('[ERROR]') || log.includes('Exception:')) {
+                        div.innerHTML = `<span class="text-red-500">${log}</span>`;
+                    } else if (log.includes('started checking') || log.includes('Process finished')) {
+                        div.innerHTML = `<span class="text-orange-400">${log}</span>`;
+                    } else if (log.includes('Success!') || log.includes('already in the library')) {
+                        div.innerHTML = `<span class="text-green-500 font-bold">${log}</span>`;
+                    } else {
+                        div.innerHTML = `<span class="text-zinc-400">${log}</span>`;
+                    }
+                    container.appendChild(div);
+                });
+                container.scrollTop = container.scrollHeight;
+            } catch (err) {}
+        };
+
+        const loadSettings = async () => {
+            try {
+                const res = await fetch('/api/settings');
+                const config = await res.json();
+                const fields = ['webhookUrl', 'eg_email', 'eg_password', 'eg_otpkey', 'eg_parentalpin', 'dashboard_password', 'telegram_token', 'rawg_api_key'];
+                fields.forEach(f => { if(document.getElementById(f)) document.getElementById(f).value = config[f] || ''; });
+            } catch (err) {}
+        };
+
+        const saveSettings = async (formId, msgId) => {
+            const payload = {};
+            const fields = ['webhookUrl', 'eg_email', 'eg_password', 'eg_otpkey', 'eg_parentalpin', 'dashboard_password', 'telegram_token', 'rawg_api_key'];
+            fields.forEach(f => { if(document.getElementById(f)) payload[f] = document.getElementById(f).value; });
+
+            try {
+                const res = await fetch('/api/settings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                if (res.ok) {
+                    const msg = document.getElementById(msgId);
+                    msg.classList.remove('opacity-0');
+                    setTimeout(() => msg.classList.add('opacity-0'), 2000);
+                } else throw new Error();
+            } catch (err) {
+                showToast("Erreur de sauvegarde", true);
+            }
+        };
+
+        document.getElementById('settings-form').addEventListener('submit', (e) => { e.preventDefault(); saveSettings('settings-form', 'settings-msg'); });
+        document.getElementById('advanced-settings-form').addEventListener('submit', (e) => { e.preventDefault(); saveSettings('advanced-settings-form', 'advanced-msg'); });
+
+        let monitorInterval;
+        const tabLogs = document.getElementById('tab-logs');
+        const tabMonitor = document.getElementById('tab-monitor');
+        const logsView = document.getElementById('logs-container');
+        const monitorView = document.getElementById('monitor-container');
+
+        tabLogs.addEventListener('click', () => {
+            tabLogs.className = "px-4 py-3 text-sm font-medium text-orange-500 border-b-2 border-orange-500";
+            tabMonitor.className = "px-4 py-3 text-sm font-medium text-zinc-400 hover:text-zinc-200 border-b-2 border-transparent";
+            logsView.classList.remove('hidden');
+            monitorView.classList.add('hidden');
+            clearInterval(monitorInterval);
+        });
+
+        tabMonitor.addEventListener('click', () => {
+            tabMonitor.className = "px-4 py-3 text-sm font-medium text-orange-500 border-b-2 border-orange-500";
+            tabLogs.className = "px-4 py-3 text-sm font-medium text-zinc-400 hover:text-zinc-200 border-b-2 border-transparent";
+            monitorView.classList.remove('hidden');
+            logsView.classList.add('hidden');
+            
+            const updateScreenshot = () => {
+                const img = document.getElementById('live-screenshot');
+                img.src = '/api/screenshot?' + new Date().getTime();
+                img.onload = () => {
+                    img.classList.remove('opacity-50');
+                    document.getElementById('monitor-status').classList.add('hidden');
+                };
+            };
+            updateScreenshot();
+            monitorInterval = setInterval(updateScreenshot, 2500);
+        });
+
+        document.getElementById('claim-btn').addEventListener('click', async () => {
+            const btn = document.getElementById('claim-btn');
+            const originalHTML = btn.innerHTML;
+            btn.innerHTML = 'Lancement...';
+            btn.disabled = true;
+            try {
+                const res = await fetch('/api/claim', { method: 'POST' });
+                const data = await res.json();
+                showToast(res.ok ? data.message : data.error, !res.ok);
+            } catch (err) {
+                showToast("Erreur serveur", true);
+            }
+            setTimeout(() => { btn.innerHTML = originalHTML; btn.disabled = false; }, 1000);
+            updateStatus();
+        });
+
+        const loadGames = async () => {
+            try {
+                const res = await fetch('/api/games');
+                const data = await res.json();
+                const container = document.getElementById('games-container');
+                const containerMobile = document.getElementById('games-container-mobile');
+                
+                let allGames = [];
+                Object.keys(data).forEach(user => {
+                    Object.values(data[user]).forEach(game => {
+                        if (!allGames.find(g => g.title === game.title)) allGames.push(game);
+                    });
+                });
+                
+                allGames.sort((a, b) => new Date(b.time) - new Date(a.time));
+
+                if (allGames.length === 0) {
+                    container.innerHTML = '<p class="text-sm text-zinc-600 px-2">Aucun jeu récupéré.</p>';
+                    if(containerMobile) containerMobile.innerHTML = '';
+                    return;
+                }
+
+                container.innerHTML = '';
+                if(containerMobile) containerMobile.innerHTML = '';
+
+                allGames.forEach(game => {
+                    const isClaimed = game.status === 'claimed';
+                    const badgeColor = isClaimed ? 'text-green-400 bg-green-500/10 ring-green-500/20' : 'text-zinc-400 bg-zinc-500/10 ring-zinc-500/20';
+                    const badgeText = isClaimed ? 'Nouveau' : 'Bibliothèque';
+                    const imgUrl = game.coverUrl || 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/31/Epic_Games_logo.svg/1200px-Epic_Games_logo.svg.png';
+                    
+                    const div = document.createElement('a');
+                    div.href = game.url;
+                    div.target = "_blank";
+                    div.className = "game-card-hover flex items-center gap-4 rounded-lg p-2 group";
+                    div.innerHTML = `
+                        <img src="${imgUrl}" alt="${game.title}" class="h-16 w-12 object-cover rounded bg-panel ring-1 ring-white/10">
+                        <div class="flex-1 min-w-0">
+                            <h4 class="text-sm font-medium text-zinc-200 truncate group-hover:text-white transition-colors">${game.title}</h4>
+                            <div class="flex items-center gap-2 mt-1">
+                                <span class="inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-medium ring-1 ring-inset ${badgeColor}">${badgeText}</span>
+                                <span class="text-xs text-zinc-600">${game.time.split(' ')[0]}</span>
+                            </div>
+                        </div>
+                    `;
+                    container.appendChild(div);
+
+                    if(containerMobile) {
+                        const mDiv = document.createElement('a');
+                        mDiv.href = game.url;
+                        mDiv.target = "_blank";
+                        mDiv.className = "shrink-0 w-32 snap-start";
+                        mDiv.innerHTML = `
+                            <img src="${imgUrl}" class="w-full h-40 object-cover rounded-lg shadow-sm bg-panel ring-1 ring-white/10 mb-2">
+                            <h4 class="text-xs font-medium text-zinc-300 truncate">${game.title}</h4>
+                        `;
+                        containerMobile.appendChild(mDiv);
+                    }
+                });
+            } catch (err) {}
+        };
+
+        setInterval(updateStatus, 2000);
+        setInterval(updateLogs, 2500);
+        setInterval(loadGames, 30000);
+        loadSettings();
+        updateStatus();
+        updateLogs();
+        loadGames();
+    </script>
+</body>
+</html>

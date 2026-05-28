@@ -4,6 +4,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { spawn } from 'child_process';
 import cron from 'node-cron';
+import chalk from 'chalk';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -115,20 +116,20 @@ function runBot() {
 // Lancer le bot automatiquement tous les jours à 18h00 (heure locale)
 // Les nouveaux jeux Epic Games sortent généralement le jeudi à 17h00.
 cron.schedule('0 18 * * *', () => {
-    console.log("Scheduled execution of the bot...");
+    console.log(chalk.yellow("▶ Scheduled execution of the bot..."));
     runBot();
 });
 
 app.post('/api/claim', (req, res) => {
     if (botStatus === "En cours d'exécution") {
-        return res.status(400).json({ error: "Le bot est déjà en cours d'exécution." });
+        return res.status(400).json({ error: "Bot is already running." });
     }
     
-    res.json({ message: "Bot lancé avec succès." });
+    res.json({ message: "Bot started successfully." });
     runBot();
 });
 
 app.listen(PORT, () => {
-    console.log(`Server started on http://localhost:${PORT}`);
-    console.log(`Automatic schedule activated (Daily free game check).`);
+    console.log(chalk.gray(`▶ Server started on http://localhost:${PORT}`));
+    console.log(chalk.gray(`▶ Automatic schedule activated (Daily free game check).`));
 });

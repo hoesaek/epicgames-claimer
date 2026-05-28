@@ -13,7 +13,6 @@ Vous pouvez déployer le projet instantanément en utilisant l'image Docker pré
 Copiez le fichier `docker-compose.yml` suivant :
 
 ```yaml
-version: '3.8'
 services:
   epic-claimer:
     image: ghcr.io/hoesaek/epicgames-claimer:latest
